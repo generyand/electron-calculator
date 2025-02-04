@@ -8,6 +8,7 @@ const Calculator = (): JSX.Element => {
   const [equation, setEquation] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [isNewNumber, setIsNewNumber] = useState<boolean>(true)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [openParenCount, setOpenParenCount] = useState<number>(0)
   const [theme, setTheme] = useState<'light' | 'dark'>('dark')
 
