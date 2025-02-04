@@ -8,8 +8,8 @@ function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 400,  // Default width
     height: 600, // Default height
-    minWidth: 300,  // Minimum usable width
-    minHeight: 450, // Minimum usable height
+    minWidth: 360,  // Minimum usable width
+    minHeight: 540, // Minimum usable height
     maxWidth: 600,  // Maximum practical width
     maxHeight: 800, // Maximum practical height
     show: false,

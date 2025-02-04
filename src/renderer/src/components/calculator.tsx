@@ -75,6 +75,21 @@ const Calculator = (): JSX.Element => {
     setIsNewNumber(true)
   }
 
+  const handleBackspace = () => {
+    setError('')
+    if (display === '0') return
+    
+    // If only one digit left, set to '0'
+    if (display.length === 1) {
+      setDisplay('0')
+      setIsNewNumber(true)
+      return
+    }
+    
+    // Remove last digit
+    setDisplay(display.slice(0, -1))
+  }
+
   // Add keyboard support
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -143,14 +158,28 @@ const Calculator = (): JSX.Element => {
             AC
           </button>
           <button 
-            onClick={() => {/* implement +/- */}}
+            onClick={handleBackspace}
             className={`text-lg font-medium transition-colors ${
               theme === 'dark'
                 ? 'bg-gray-800 hover:bg-gray-700 text-blue-400'
                 : 'bg-white hover:bg-gray-50 text-blue-500'
             }`}
+            aria-label="Backspace"
           >
-            ±
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              className="w-6 h-6 inline-block"
+              strokeWidth="2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+              <line x1="18" y1="9" x2="12" y2="15" />
+              <line x1="12" y1="9" x2="18" y2="15" />
+            </svg>
           </button>
           <button 
             onClick={() => {/* implement % */}}
