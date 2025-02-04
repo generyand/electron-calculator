@@ -11,6 +11,28 @@ const Calculator = (): JSX.Element => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [openParenCount, setOpenParenCount] = useState<number>(0)
   const [theme, setTheme] = useState<'light' | 'dark'>('dark')
+  const [memory, setMemory] = useState<number>(0)
+  const [showMemory, setShowMemory] = useState<boolean>(false)
+  const MAX_DIGITS = 16
+
+  // Add constants
+  const MAX_VALUE = 1e308
+  const MIN_VALUE = -1e308
+
+  // Add validation helper functions
+  const isValidNumber = (num: number): boolean => {
+    return !isNaN(num) && isFinite(num) && num > MIN_VALUE && num < MAX_VALUE
+  }
+
+  const formatNumber = (num: number): string => {
+    if (Math.abs(num) >= 1e16 || (Math.abs(num) < 1e-7 && num !== 0)) {
+      return num.toExponential(10)
+    }
+    return num.toLocaleString('en-US', {
+      maximumFractionDigits: 8,
+      useGrouping: true
+    })
+  }
 
   // Listen to system theme changes
   useEffect(() => {
@@ -33,7 +55,7 @@ const Calculator = (): JSX.Element => {
 
   const handleNumber = (number: string) => {
     setError('')
-    // Prevent multiple decimal points
+    if (display.replace(/[,.]/g, '').length >= MAX_DIGITS) return
     if (number === '.' && display.includes('.')) return
 
     if (isNewNumber) {
@@ -56,33 +78,55 @@ const Calculator = (): JSX.Element => {
     setIsNewNumber(true)
   }
 
+  const handlePercent = () => {
+    try {
+      const currentValue = parseFloat(display)
+      if (!equation) {
+        const result = currentValue / 100
+        setDisplay(formatNumber(result))
+      } else {
+        const baseValue = parseFloat(equation.split(' ')[0])
+        const result = (baseValue * currentValue) / 100
+        setDisplay(formatNumber(result))
+      }
+    } catch (err) {
+      setError('Error')
+    }
+  }
+
   const handleEqual = () => {
     try {
       const fullExpression = equation + display
       if (!equation) return
       
+      // Validate parentheses
+      if ((fullExpression.match(/\(/g) || []).length !== 
+          (fullExpression.match(/\)/g) || []).length) {
+        throw new Error('Mismatched parentheses')
+      }
+
+      // Validate operators
+      if (/[+\-*/]{2,}/.test(fullExpression)) {
+        throw new Error('Invalid operator sequence')
+      }
+
       const result = math.evaluate(fullExpression)
       
-      if (typeof result !== 'number' || !isFinite(result)) {
-        throw new Error('Invalid calculation')
+      if (!isValidNumber(result)) {
+        throw new Error('Result out of range')
       }
-      
-      // Vibrate on calculation complete (mobile feedback)
+
+      // Vibrate on calculation complete
       if (navigator.vibrate) {
         navigator.vibrate(50)
       }
       
-      const formattedResult = Number(result).toLocaleString('en-US', {
-        maximumFractionDigits: 8,
-        useGrouping: true
-      })
-      
       setEquation(fullExpression + ' = ')
-      setDisplay(formattedResult)
+      setDisplay(formatNumber(result))
       setIsNewNumber(true)
     } catch (err) {
       console.error('Calculation error:', err)
-      setError('Error')
+      setError(err instanceof Error ? err.message : 'Error')
       setDisplay('0')
       setEquation('')
       setIsNewNumber(true)
@@ -111,7 +155,42 @@ const Calculator = (): JSX.Element => {
     setDisplay(display.slice(0, -1))
   }
 
-  // Add keyboard support
+  // Add memory functions
+  const handleMemoryAdd = () => {
+    try {
+      const currentValue = parseFloat(display)
+      setMemory(memory + currentValue)
+      setShowMemory(true)
+      setIsNewNumber(true)
+    } catch (err) {
+      setError('Error')
+    }
+  }
+
+  const handleMemorySubtract = () => {
+    try {
+      const currentValue = parseFloat(display)
+      setMemory(memory - currentValue)
+      setShowMemory(true)
+      setIsNewNumber(true)
+    } catch (err) {
+      setError('Error')
+    }
+  }
+
+  const handleMemoryRecall = () => {
+    if (memory !== 0) {
+      setDisplay(formatNumber(memory))
+      setIsNewNumber(true)
+    }
+  }
+
+  const handleMemoryClear = () => {
+    setMemory(0)
+    setShowMemory(false)
+  }
+
+  // Update keyboard support
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key.match(/[0-9.]/)) {
@@ -122,6 +201,10 @@ const Calculator = (): JSX.Element => {
         handleEqual()
       } else if (e.key === 'Escape') {
         handleClear()
+      } else if (e.key === 'Backspace') {
+        handleBackspace()
+      } else if (e.key === '%') {
+        handlePercent()
       }
     }
 
@@ -143,6 +226,7 @@ const Calculator = (): JSX.Element => {
           <div className={`text-base min-h-6 text-right break-words overflow-y-auto max-h-20 ${
             theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
           }`}>
+            {showMemory && <span className="mr-2">M</span>}
             {equation}
             {openParenCount > 0 && <span className="text-blue-400">{` (×${openParenCount})`}</span>}
           </div>
@@ -153,11 +237,53 @@ const Calculator = (): JSX.Element => {
           </div>
         </div>
         
-        {/* Keypad Section */}
+        {/* Keypad Section - Clean layout with 6 rows */}
         <div className={`flex-grow grid grid-cols-4 gap-[1px] ${
           theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
         }`}>
-          {/* First Row */}
+          {/* Memory Function Row */}
+          <button 
+            onClick={handleMemoryClear}
+            className={`text-lg font-medium transition-colors ${
+              theme === 'dark'
+                ? 'bg-gray-800 hover:bg-gray-700 text-blue-400'
+                : 'bg-white hover:bg-gray-50 text-blue-500'
+            }`}
+          >
+            MC
+          </button>
+          <button 
+            onClick={handleMemoryRecall}
+            className={`text-lg font-medium transition-colors ${
+              theme === 'dark'
+                ? 'bg-gray-800 hover:bg-gray-700 text-blue-400'
+                : 'bg-white hover:bg-gray-50 text-blue-500'
+            }`}
+          >
+            MR
+          </button>
+          <button 
+            onClick={handleMemoryAdd}
+            className={`text-lg font-medium transition-colors ${
+              theme === 'dark'
+                ? 'bg-gray-800 hover:bg-gray-700 text-blue-400'
+                : 'bg-white hover:bg-gray-50 text-blue-500'
+            }`}
+          >
+            M+
+          </button>
+          <button 
+            onClick={handleMemorySubtract}
+            className={`text-lg font-medium transition-colors ${
+              theme === 'dark'
+                ? 'bg-gray-800 hover:bg-gray-700 text-blue-400'
+                : 'bg-white hover:bg-gray-50 text-blue-500'
+            }`}
+          >
+            M-
+          </button>
+
+          {/* Clear and Special Functions Row */}
           <button 
             onClick={handleClear}
             className={`text-lg font-medium transition-colors ${
@@ -193,7 +319,7 @@ const Calculator = (): JSX.Element => {
             </svg>
           </button>
           <button 
-            onClick={() => {/* implement % */}}
+            onClick={handlePercent}
             className={`text-lg font-medium transition-colors ${
               theme === 'dark'
                 ? 'bg-gray-800 hover:bg-gray-700 text-blue-400'
@@ -213,20 +339,27 @@ const Calculator = (): JSX.Element => {
             ÷
           </button>
 
-          {/* Numbers 7-9 */}
-          {[7, 8, 9].map(num => (
-            <button
-              key={num}
-              onClick={() => handleNumber(num.toString())}
-              className={`text-xl transition-colors ${
-                theme === 'dark'
-                  ? 'bg-gray-800 hover:bg-gray-700 text-white'
-                  : 'bg-white hover:bg-gray-50 text-gray-900'
-              }`}
-            >
-              {num}
-            </button>
-          ))}
+          {/* Parentheses Row */}
+          <button 
+            onClick={() => handleOperator('(')}
+            className={`text-lg font-medium transition-colors ${
+              theme === 'dark'
+                ? 'bg-gray-800 hover:bg-gray-700 text-blue-400'
+                : 'bg-white hover:bg-gray-50 text-blue-500'
+            }`}
+          >
+            (
+          </button>
+          <button 
+            onClick={() => handleOperator(')')}
+            className={`text-lg font-medium transition-colors ${
+              theme === 'dark'
+                ? 'bg-gray-800 hover:bg-gray-700 text-blue-400'
+                : 'bg-white hover:bg-gray-50 text-blue-500'
+            }`}
+          >
+            )
+          </button>
           <button 
             onClick={() => handleOperator('*')}
             className={`text-xl font-medium transition-colors ${
@@ -237,21 +370,6 @@ const Calculator = (): JSX.Element => {
           >
             ×
           </button>
-
-          {/* Numbers 4-6 */}
-          {[4, 5, 6].map(num => (
-            <button
-              key={num}
-              onClick={() => handleNumber(num.toString())}
-              className={`text-xl transition-colors ${
-                theme === 'dark'
-                  ? 'bg-gray-800 hover:bg-gray-700 text-white'
-                  : 'bg-white hover:bg-gray-50 text-gray-900'
-              }`}
-            >
-              {num}
-            </button>
-          ))}
           <button 
             onClick={() => handleOperator('-')}
             className={`text-xl font-medium transition-colors ${
@@ -263,8 +381,8 @@ const Calculator = (): JSX.Element => {
             −
           </button>
 
-          {/* Numbers 1-3 */}
-          {[1, 2, 3].map(num => (
+          {/* Numbers 7-9 */}
+          {[7, 8, 9].map(num => (
             <button
               key={num}
               onClick={() => handleNumber(num.toString())}
@@ -288,6 +406,46 @@ const Calculator = (): JSX.Element => {
             +
           </button>
 
+          {/* Numbers 4-6 */}
+          {[4, 5, 6].map(num => (
+            <button
+              key={num}
+              onClick={() => handleNumber(num.toString())}
+              className={`text-xl transition-colors ${
+                theme === 'dark'
+                  ? 'bg-gray-800 hover:bg-gray-700 text-white'
+                  : 'bg-white hover:bg-gray-50 text-gray-900'
+              }`}
+            >
+              {num}
+            </button>
+          ))}
+          <button 
+            onClick={handleEqual}
+            className={`text-xl font-medium transition-colors row-span-3 ${
+              theme === 'dark'
+                ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                : 'bg-blue-500 hover:bg-blue-600 text-white'
+            }`}
+          >
+            =
+          </button>
+
+          {/* Numbers 1-3 */}
+          {[1, 2, 3].map(num => (
+            <button
+              key={num}
+              onClick={() => handleNumber(num.toString())}
+              className={`text-xl transition-colors ${
+                theme === 'dark'
+                  ? 'bg-gray-800 hover:bg-gray-700 text-white'
+                  : 'bg-white hover:bg-gray-50 text-gray-900'
+              }`}
+            >
+              {num}
+            </button>
+          ))}
+
           {/* Bottom Row */}
           <button 
             onClick={() => handleNumber('0')}
@@ -308,16 +466,6 @@ const Calculator = (): JSX.Element => {
             }`}
           >
             .
-          </button>
-          <button 
-            onClick={handleEqual}
-            className={`text-xl font-medium transition-colors ${
-              theme === 'dark'
-                ? 'bg-blue-500 hover:bg-blue-600 text-white'
-                : 'bg-blue-500 hover:bg-blue-600 text-white'
-            }`}
-          >
-            =
           </button>
         </div>
       </div>
