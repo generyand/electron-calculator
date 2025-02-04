@@ -1,14 +1,34 @@
 import { useState, useEffect } from 'react'
 import * as math from 'mathjs'
 
-type OperatorType = '+' | '-' | '*' | '/'
+type OperatorType = '+' | '-' | '*' | '/' | '(' | ')'
 
 const Calculator = (): JSX.Element => {
   const [display, setDisplay] = useState<string>('0')
   const [equation, setEquation] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [isNewNumber, setIsNewNumber] = useState<boolean>(true)
+  const [openParenCount, setOpenParenCount] = useState<number>(0)
   const [theme, setTheme] = useState<'light' | 'dark'>('dark')
+
+  // Listen to system theme changes
+  useEffect(() => {
+    // Check initial system theme
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    setTheme(darkModeMediaQuery.matches ? 'dark' : 'light')
+
+    // Listen for theme changes
+    const handleThemeChange = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? 'dark' : 'light')
+    }
+
+    darkModeMediaQuery.addEventListener('change', handleThemeChange)
+
+    // Cleanup listener
+    return () => {
+      darkModeMediaQuery.removeEventListener('change', handleThemeChange)
+    }
+  }, [])
 
   const handleNumber = (number: string) => {
     setError('')
@@ -110,23 +130,12 @@ const Calculator = (): JSX.Element => {
 
   return (
     <div className={`w-full h-screen min-w-[300px] min-h-[450px] transition-colors duration-300 ${
-      theme === 'dark' 
-        ? 'bg-gray-900' 
-        : 'bg-gray-50'
+      theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
     } flex items-center justify-center`}>
       <div className={`${
         theme === 'dark' ? 'bg-gray-800' : 'bg-white'
       } w-full h-full flex flex-col`}>
-        {/* Theme Toggle */}
-        <button
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-opacity-10 hover:bg-white transition-colors"
-          aria-label="Toggle theme"
-        >
-          {theme === 'dark' ? '☀️' : '🌙'}
-        </button>
-
-        {/* Display Section - Approximately 40% of height */}
+        {/* Display Section */}
         <div className={`flex-none h-2/5 p-6 flex flex-col justify-end ${
           theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'
         }`}>
@@ -134,6 +143,7 @@ const Calculator = (): JSX.Element => {
             theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
           }`}>
             {equation}
+            {openParenCount > 0 && <span className="text-blue-400">{` (×${openParenCount})`}</span>}
           </div>
           <div className={`text-4xl font-light text-right break-words mt-4 truncate ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
