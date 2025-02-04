@@ -1,27 +1,35 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import icon from '../../resources/icon.png?asset'
 
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 400,  // Default width
     height: 600, // Default height
-    minWidth: 360,  // Minimum usable width
-    minHeight: 540, // Minimum usable height
+    minWidth: 300,  // Minimum usable width
+    minHeight: 450, // Minimum usable height
     maxWidth: 600,  // Maximum practical width
     maxHeight: 800, // Maximum practical height
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    frame: true,     // Keep the frame for standard window controls
+    icon: undefined,  // Remove default icon
+    titleBarStyle: 'default',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
   })
 
+  // Set to empty string to remove the icon
+  // mainWindow.setIcon("")
   
+  // Remove the title bar icon (Windows specific)
+  if (process.platform === 'win32') {
+    mainWindow.setOverlayIcon(null, '')
+  }
+
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()
     mainWindow.setTitle('Calculator')
