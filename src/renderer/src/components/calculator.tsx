@@ -127,7 +127,7 @@ const Calculator = (): JSX.Element => {
           </div>
         </div>
         
-        {/* Keypad Section - Approximately 60% of height */}
+        {/* Keypad Section */}
         <div className={`flex-grow grid grid-cols-4 gap-[1px] ${
           theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
         }`}>
@@ -173,8 +173,8 @@ const Calculator = (): JSX.Element => {
             ÷
           </button>
 
-          {/* Number Grid */}
-          {[7, 8, 9, 4, 5, 6, 1, 2, 3].map(num => (
+          {/* Numbers 7-9 */}
+          {[7, 8, 9].map(num => (
             <button
               key={num}
               onClick={() => handleNumber(num.toString())}
@@ -187,8 +187,6 @@ const Calculator = (): JSX.Element => {
               {num}
             </button>
           ))}
-
-          {/* Operators */}
           <button 
             onClick={() => handleOperator('*')}
             className={`text-xl font-medium transition-colors ${
@@ -199,6 +197,21 @@ const Calculator = (): JSX.Element => {
           >
             ×
           </button>
+
+          {/* Numbers 4-6 */}
+          {[4, 5, 6].map(num => (
+            <button
+              key={num}
+              onClick={() => handleNumber(num.toString())}
+              className={`text-xl transition-colors ${
+                theme === 'dark'
+                  ? 'bg-gray-800 hover:bg-gray-700 text-white'
+                  : 'bg-white hover:bg-gray-50 text-gray-900'
+              }`}
+            >
+              {num}
+            </button>
+          ))}
           <button 
             onClick={() => handleOperator('-')}
             className={`text-xl font-medium transition-colors ${
@@ -209,6 +222,21 @@ const Calculator = (): JSX.Element => {
           >
             −
           </button>
+
+          {/* Numbers 1-3 */}
+          {[1, 2, 3].map(num => (
+            <button
+              key={num}
+              onClick={() => handleNumber(num.toString())}
+              className={`text-xl transition-colors ${
+                theme === 'dark'
+                  ? 'bg-gray-800 hover:bg-gray-700 text-white'
+                  : 'bg-white hover:bg-gray-50 text-gray-900'
+              }`}
+            >
+              {num}
+            </button>
+          ))}
           <button 
             onClick={() => handleOperator('+')}
             className={`text-xl font-medium transition-colors ${
